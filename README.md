@@ -6,8 +6,7 @@ Claude 技能集合，用于各种领域和任务。
 
 | 技能名称 | 描述 | 安装命令 |
 |---------|------|---------|
-| agent-teams-monitor | Claude Agent Teams 实时监控仪表板 | `npx skills add findxme/fm-skills@agent-teams-monitor` |
-| | | |
+| [agent-teams-monitor](./agent-teams-monitor) | Claude Agent Teams 实时监控仪表板 | `npx skills add findxme/fm-skills@agent-teams-monitor` |
 
 ## 安装技能
 
