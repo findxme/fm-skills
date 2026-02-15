@@ -15,6 +15,10 @@ import {
   Power,
   Pause,
   Play,
+  Settings,
+  FolderOpen,
+  Clipboard,
+  Terminal,
 } from 'lucide-react'
 
 function formatTime(ts) {
@@ -34,6 +38,7 @@ const TABS = [
   { id: 'overview', label: 'Overview', icon: Activity },
   { id: 'tasks', label: 'Tasks', icon: ListTodo },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
+  { id: 'config', label: 'Config', icon: Settings },
 ]
 
 function TaskCard({ task }) {
@@ -382,7 +387,7 @@ export default function MemberDetail({ member, tasks, messages, teamName }) {
               <h2 className="text-lg font-bold text-slate-900">
                 {member.name}
               </h2>
-              <div className="flex items-center gap-1.5 text-xs mt-1">
+              <div className="flex items-center gap-1.5 text-xs mt-1 flex-wrap">
                 {member.agentType && (
                   <span className="px-2 py-0.5 rounded-lg bg-white border border-indigo-100 text-indigo-700 font-semibold">
                     {member.agentType}
@@ -391,6 +396,11 @@ export default function MemberDetail({ member, tasks, messages, teamName }) {
                 {member.model && (
                   <span className="px-2 py-0.5 rounded-lg bg-white border border-purple-100 text-purple-700 font-semibold">
                     {member.model}
+                  </span>
+                )}
+                {member.backendType && (
+                  <span className="px-2 py-0.5 rounded-lg bg-white border border-emerald-100 text-emerald-700 font-semibold">
+                    {member.backendType}
                   </span>
                 )}
                 <span className="text-slate-500 ml-1">in {teamName}</span>
@@ -621,6 +631,131 @@ export default function MemberDetail({ member, tasks, messages, teamName }) {
                 <MessageCard key={idx} message={msg} agentName={member.name} />
               ))
             )}
+          </div>
+        )}
+
+        {activeTab === 'config' && (
+          <div className="space-y-4">
+            {/* Basic Info */}
+            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <h3 className="text-sm font-bold text-slate-900">Basic Information</h3>
+              </div>
+              <div className="divide-y divide-slate-100">
+                <div className="px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Agent ID</span>
+                  <span className="text-xs font-mono text-slate-700">{member.agentId}</span>
+                </div>
+                <div className="px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Name</span>
+                  <span className="text-xs text-slate-700">{member.name}</span>
+                </div>
+                <div className="px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Agent Type</span>
+                  <span className="text-xs text-slate-700">{member.agentType}</span>
+                </div>
+                <div className="px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Model</span>
+                  <span className="text-xs text-slate-700">{member.model}</span>
+                </div>
+                {member.color && (
+                  <div className="px-4 py-2.5 flex items-center justify-between">
+                    <span className="text-xs text-slate-500">Color</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`w-4 h-4 rounded-full bg-${member.color}-500`}></span>
+                      <span className="text-xs text-slate-700">{member.color}</span>
+                    </div>
+                  </div>
+                )}
+                {member.backendType && (
+                  <div className="px-4 py-2.5 flex items-center justify-between">
+                    <span className="text-xs text-slate-500">Backend Type</span>
+                    <span className="text-xs text-slate-700">{member.backendType}</span>
+                  </div>
+                )}
+                {member.planModeRequired !== undefined && (
+                  <div className="px-4 py-2.5 flex items-center justify-between">
+                    <span className="text-xs text-slate-500">Plan Mode Required</span>
+                    <span className={`text-xs font-medium ${member.planModeRequired ? 'text-amber-600' : 'text-slate-700'}`}>
+                      {member.planModeRequired ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                )}
+                {member.tmuxPaneId && (
+                  <div className="px-4 py-2.5 flex items-center justify-between">
+                    <span className="text-xs text-slate-500">tmux Pane ID</span>
+                    <span className="text-xs font-mono text-slate-700">{member.tmuxPaneId}</span>
+                  </div>
+                )}
+                {member.joinedAt && (
+                  <div className="px-4 py-2.5 flex items-center justify-between">
+                    <span className="text-xs text-slate-500">Joined At</span>
+                    <span className="text-xs text-slate-700">{formatTime(member.joinedAt)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Working Directory */}
+            {member.cwd && (
+              <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                  <FolderOpen className="w-4 h-4 text-slate-500" />
+                  <h3 className="text-sm font-bold text-slate-900">Working Directory</h3>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                    <Terminal className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <code className="text-xs font-mono text-slate-700 break-all">{member.cwd}</code>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Subscriptions */}
+            {member.subscriptions && member.subscriptions.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                  <h3 className="text-sm font-bold text-slate-900">Subscriptions</h3>
+                </div>
+                <div className="p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {member.subscriptions.map((sub, idx) => (
+                      <span key={idx} className="inline-flex items-center px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-mono">
+                        {sub}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Prompt */}
+            {member.prompt && (
+              <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                  <Clipboard className="w-4 h-4 text-slate-500" />
+                  <h3 className="text-sm font-bold text-slate-900">System Prompt</h3>
+                </div>
+                <div className="p-4">
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 max-h-96 overflow-y-auto">
+                    <pre className="text-xs font-mono text-slate-700 whitespace-pre-wrap break-words">{member.prompt}</pre>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Raw JSON */}
+            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <h3 className="text-sm font-bold text-slate-900">Raw Configuration</h3>
+              </div>
+              <div className="p-4">
+                <pre className="text-xs font-mono text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3 max-h-64 overflow-auto">
+                  {JSON.stringify(member, null, 2)}
+                </pre>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -31,12 +31,30 @@ export function listTeams() {
     const config = readJsonSafe(configPath);
     if (!config) continue;
 
+    // Extract member details from config
+    const members = (config.members || []).map((m) => ({
+      agentId: m.agentId,
+      name: m.name,
+      agentType: m.agentType,
+      model: m.model,
+      color: m.color || null,
+      joinedAt: m.joinedAt,
+      cwd: m.cwd || null,
+      backendType: m.backendType || null,
+      prompt: m.prompt || null,
+      tmuxPaneId: m.tmuxPaneId || null,
+      subscriptions: m.subscriptions || [],
+      planModeRequired: m.planModeRequired || false,
+    }));
+
     teams.push({
       name: config.name,
       description: config.description,
       createdAt: config.createdAt,
       leadAgentId: config.leadAgentId,
-      memberCount: config.members ? config.members.length : 0,
+      leadSessionId: config.leadSessionId || null,
+      members,
+      memberCount: members.length,
     });
   }
 
@@ -58,8 +76,12 @@ export function getTeam(teamName) {
     model: m.model,
     color: m.color || null,
     joinedAt: m.joinedAt,
-    cwd: m.cwd,
+    cwd: m.cwd || null,
     backendType: m.backendType || null,
+    prompt: m.prompt || null,
+    tmuxPaneId: m.tmuxPaneId || null,
+    subscriptions: m.subscriptions || [],
+    planModeRequired: m.planModeRequired || false,
   }));
 
   return {
@@ -67,7 +89,7 @@ export function getTeam(teamName) {
     description: config.description,
     createdAt: config.createdAt,
     leadAgentId: config.leadAgentId,
-    leadSessionId: config.leadSessionId,
+    leadSessionId: config.leadSessionId || null,
     members,
   };
 }

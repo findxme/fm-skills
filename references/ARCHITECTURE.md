@@ -166,45 +166,30 @@ Connection: `ws://localhost:3001/ws`
 ## 4. Project Structure
 
 ```
-agents-225ea54532/
+ag-teame-dashboard/
 ├── backend/
 │   ├── package.json
-│   ├── src/
-│   │   ├── index.js          # Entry point, Express + WS setup
-│   │   ├── routes/
-│   │   │   ├── teams.js       # /api/teams routes
-│   │   │   ├── tasks.js       # /api/teams/:team/tasks routes
-│   │   │   └── debug.js       # /api/debug routes
-│   │   ├── services/
-│   │   │   ├── fileWatcher.js # chokidar-based file system watcher
-│   │   │   ├── teamService.js # Read/parse team configs
-│   │   │   ├── taskService.js # Read/parse task files
-│   │   │   └── debugService.js# Read/parse debug logs
-│   │   └── ws/
-│   │       └── handler.js     # WebSocket connection + event handler
-│   └── .env                   # CLAUDE_DIR path config
+│   └── src/
+│       ├── server.js          # Express + WebSocket + WS setup
+│       ├── routes.js         # REST API route definitions
+│       ├── log-reader.js     # File system reader for ~/.claude/ data
+│       └── file-watcher.js   # Real-time file change detection
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.js
-│   ├── tailwind.config.js
 │   ├── index.html
-│   ├── src/
-│   │   ├── main.jsx
-│   │   ├── App.jsx
-│   │   ├── hooks/
-│   │   │   └── useWebSocket.js
-│   │   ├── components/
-│   │   │   ├── Layout.jsx
-│   │   │   ├── Sidebar.jsx        # Team list + navigation
-│   │   │   ├── TeamOverview.jsx    # Team summary with members
-│   │   │   ├── TaskBoard.jsx       # Task list with status/deps
-│   │   │   ├── MessageFeed.jsx     # Agent message timeline
-│   │   │   ├── DebugLogViewer.jsx  # Scrollable log viewer
-│   │   │   ├── AgentCard.jsx       # Individual agent info
-│   │   │   └── StatusBadge.jsx     # Status indicators
-│   │   └── utils/
-│   │       └── api.js             # REST API client
-│   └── public/
+│   └── src/
+│       ├── main.jsx
+│       ├── App.jsx           # Three-column layout
+│       ├── hooks/
+│       │   ├── useDashboard.js  # Data fetching and state
+│       │   └── useWebSocket.js  # Real-time updates
+│       └── components/
+│           ├── Header.jsx      # Header with connection status
+│           ├── TeamList.jsx     # Teams list with search
+│           ├── MemberList.jsx   # Team members with status
+│           └── MemberDetail.jsx # Member details with tabs
+├── package.json              # Root scripts
 └── ARCHITECTURE.md
 ```
 
@@ -212,42 +197,38 @@ agents-225ea54532/
 
 ## 5. UI/UX Layout
 
-### Page Layout
+### Three-Column Layout
+
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│  Header: "Agent Teams Monitor"              [Status] [Settings]  │
-├──────────┬───────────────────────────────────────────────────────┤
-│          │                                                       │
-│ Sidebar  │  Main Content Area                                    │
-│          │                                                       │
-│ Teams:   │  ┌─────────────────────────────────────────────────┐  │
-│ ● team-1 │  │  Team Overview                                  │  │
-│ ○ team-2 │  │  Name / Description / Created                   │  │
-│ ○ team-3 │  │  Members: [AgentCard] [AgentCard] [AgentCard]   │  │
-│          │  └─────────────────────────────────────────────────┘  │
-│ ──────── │                                                       │
-│          │  ┌──────────────────┐  ┌────────────────────────────┐ │
-│ Filters: │  │  Task Board      │  │  Message Feed              │ │
-│ Status   │  │  ┌────────────┐  │  │  [timestamp] agent: msg    │ │
-│ Agent    │  │  │ Task #1    │  │  │  [timestamp] agent: msg    │ │
-│ Search   │  │  │ ● active   │  │  │  [timestamp] agent: msg    │ │
-│          │  │  │ blocks: 2,3│  │  │                            │ │
-│          │  │  └────────────┘  │  │                            │ │
-│          │  │  ┌────────────┐  │  │                            │ │
-│          │  │  │ Task #2    │  │  │                            │ │
-│          │  │  │ ○ pending  │  │  │                            │ │
-│          │  │  │ blocked: 1 │  │  │                            │ │
-│          │  │  └────────────┘  │  │                            │ │
-│          │  └──────────────────┘  └────────────────────────────┘ │
-│          │                                                       │
-│          │  ┌─────────────────────────────────────────────────┐  │
-│          │  │  Debug Log Viewer                [auto-scroll]  │  │
-│          │  │  2026-02-15T16:14:38 [DEBUG] init starting      │  │
-│          │  │  2026-02-15T16:14:38 [ERROR] MCP failed         │  │
-│          │  │  ...                                             │  │
-│          │  └─────────────────────────────────────────────────┘  │
-└──────────┴───────────────────────────────────────────────────────┘
+┌─────────────┬─────────────┬──────────────────────┐
+│   Teams     │  Members    │   Member Details     │
+│             │             │                      │
+│  [Search]   │  Lead      │  ┌─ Overview        │
+│             │  Member A   │  ├─ Tasks           │
+│  • Team A   │  Member B   │  ├─ Messages        │
+│  • Team B   │             │  └─ Config           │
+└─────────────┴─────────────┴──────────────────────┘
 ```
+
+### Column Details
+
+**Column 1: Teams List**
+- Search teams by name or description
+- Collapsible to icon bar
+- Shows member count and lead session ID
+- Member preview badges
+
+**Column 2: Members List**
+- Shows all team members with real-time status
+- Status: Active (green), Idle (amber), Offline (gray)
+- Collapsible to icon bar
+- Click to view member details
+
+**Column 3: Member Details**
+- **Overview Tab**: Statistics, recent tasks, recent messages
+- **Tasks Tab**: All tasks assigned to member
+- **Messages Tab**: Inbox messages with formatting
+- **Config Tab**: Full member configuration (prompt, cwd, backendType, etc.)
 
 ### Key UI Features
 
@@ -257,12 +238,14 @@ agents-225ea54532/
 4. **Message Feed** - Real-time chronological message stream from agent inboxes, with color coding by agent
 5. **Debug Log Viewer** - Tail-style log viewer with auto-scroll, level filtering (DEBUG/ERROR/INFO/WARN), and text search
 6. **Status Indicators** - WebSocket connection status, last update timestamp, file watcher health
+7. **Collapsible Panels** - Teams and Members columns can collapse to icon bar
+8. **Manual Status Override** - Users can manually set agent status
 
 ### Color Scheme
 - Agent colors from config (blue, green, yellow, etc.)
 - Status: pending=gray, in_progress=amber, completed=green
 - Log levels: DEBUG=gray, INFO=blue, WARN=amber, ERROR=red
-- Dark theme with light theme toggle
+- Light theme with gradient accents (indigo/purple)
 
 ---
 
@@ -300,3 +283,5 @@ export default {
 4. **Express over Fastify/Koa**: Familiar, well-documented, sufficient for this use case
 5. **Single WebSocket endpoint**: Multiplex different event types over one connection with channel-based subscriptions
 6. **Pagination for debug logs**: Debug files can be multi-MB; stream/paginate rather than loading entirely
+7. **React hooks for state**: Lightweight state management without Redux
+8. **TailwindCSS v4**: Utility-first CSS with modern features

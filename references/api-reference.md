@@ -22,19 +22,59 @@ Health check with summary statistics.
 }
 ```
 
-### Teams
+### Dashboard Aggregation
 
-#### `GET /api/teams`
-List all discovered teams.
+#### `GET /api/dashboard`
+Get aggregated dashboard data (teams + tasks + messages).
 
 **Response:**
 ```json
 [
   {
     "name": "my-team",
-    "memberCount": 3,
-    "taskCount": 5,
-    "description": "Team description"
+    "description": "Team description",
+    "createdAt": 1771181548614,
+    "leadAgentId": "team-lead@my-team",
+    "leadSessionId": "uuid-here",
+    "members": [
+      {
+        "agentId": "pm@my-team",
+        "name": "pm",
+        "agentType": "general-purpose",
+        "model": "claude-opus-4-6",
+        "prompt": "Product manager prompt...",
+        "color": "blue",
+        "planModeRequired": false,
+        "joinedAt": 1771181565938,
+        "tmuxPaneId": "in-process",
+        "cwd": "/Users/path/to/project",
+        "subscriptions": [],
+        "backendType": "in-process"
+      }
+    ],
+    "memberCount": 4,
+    "tasks": [],
+    "messageCount": 0
+  }
+]
+```
+
+### Teams
+
+#### `GET /api/teams`
+List all discovered teams with summary info.
+
+**Response:**
+```json
+[
+  {
+    "name": "my-team",
+    "description": "Team description",
+    "createdAt": 1771181548614,
+    "leadAgentId": "team-lead@my-team",
+    "leadSessionId": "uuid-here",
+    "members": [...],
+    "memberCount": 4
   }
 ]
 ```
@@ -47,15 +87,25 @@ Get team details including members and configuration.
 {
   "name": "my-team",
   "description": "Team description",
+  "createdAt": 1771181548614,
+  "leadAgentId": "team-lead@my-team",
+  "leadSessionId": "uuid-here",
   "members": [
     {
-      "name": "agent-1",
-      "agentId": "uuid",
+      "agentId": "pm@my-team",
+      "name": "pm",
       "agentType": "general-purpose",
-      "model": "claude-sonnet-4.5"
+      "model": "claude-opus-4-6",
+      "color": "blue",
+      "joinedAt": 1771181565938,
+      "cwd": "/Users/path/to/project",
+      "backendType": "in-process",
+      "prompt": "Product manager prompt...",
+      "tmuxPaneId": "in-process",
+      "subscriptions": [],
+      "planModeRequired": false
     }
-  ],
-  "leadSessionId": "uuid"
+  ]
 }
 ```
 
@@ -71,8 +121,10 @@ List all tasks for a team.
     "id": "1",
     "subject": "Task title",
     "description": "Task description",
-    "status": "in_progress",
+    "activeForm": "Working on task",
     "owner": "agent-1",
+    "status": "in_progress",
+    "blocks": [],
     "blockedBy": []
   }
 ]
@@ -87,8 +139,10 @@ Get a specific task by ID.
   "id": "1",
   "subject": "Task title",
   "description": "Task description",
-  "status": "completed",
+  "activeForm": "Working on task",
   "owner": "agent-1",
+  "status": "completed",
+  "blocks": [],
   "blockedBy": []
 }
 ```
@@ -106,9 +160,11 @@ List all inbox messages for all agents in a team.
       "from": "team-lead",
       "to": "agent-1",
       "text": "Message content",
-      "timestamp": "2026-02-15T12:00:00Z"
+      "timestamp": "2026-02-15T12:00:00Z",
+      "summary": "Brief summary"
     }
-  ]
+  ],
+  "agent-2": [...]
 }
 ```
 
@@ -122,6 +178,7 @@ Get inbox messages for a specific agent.
     "from": "team-lead",
     "text": "Message content",
     "timestamp": "2026-02-15T12:00:00Z",
+    "summary": "Brief summary",
     "read": false
   }
 ]
@@ -161,12 +218,12 @@ Send a shutdown request to an agent.
 ```
 
 #### `POST /api/teams/:teamName/agents/:agentName/control`
-Control agent execution (pause/resume/restart).
+Control agent execution (pause/resume).
 
 **Request Body:**
 ```json
 {
-  "action": "pause"  // or "resume" or "restart"
+  "action": "pause"  // or "resume"
 }
 ```
 
@@ -188,9 +245,8 @@ List all debug session files.
 [
   {
     "sessionId": "uuid",
-    "path": "/path/to/debug/file.txt",
     "size": 12345,
-    "modified": 1708056789000
+    "modifiedAt": 1708056789000
   }
 ]
 ```
@@ -205,9 +261,9 @@ Get debug log content.
 ```json
 {
   "sessionId": "uuid",
-  "lines": [
-    "[2026-02-15T12:00:00Z] Log message"
-  ]
+  "totalLines": 1000,
+  "lines": ["[2026-02-15T12:00:00Z] Log message"],
+  "truncated": true
 }
 ```
 
@@ -217,23 +273,24 @@ Get last N lines of debug log.
 **Query Parameters:**
 - `lines` (optional): Number of lines to retrieve (default: 50)
 
-### Dashboard Aggregation
-
-#### `GET /api/dashboard`
-Get aggregated dashboard data (teams + tasks + messages).
-
 **Response:**
 ```json
-[
-  {
-    "name": "my-team",
-    "members": [...],
-    "tasks": [...],
-    "messageCount": 5,
-    "leadSessionId": "uuid"
-  }
-]
+{
+  "sessionId": "uuid",
+  "lines": ["[2026-02-15T12:00:00Z] Log message"]
+}
 ```
+
+### Server-Sent Events
+
+#### `GET /api/events`
+Server-Sent Events stream for real-time updates.
+
+**Event Types:**
+- `team:updated` - Team configuration changed
+- `task:updated` - Task status changed
+- `message:new` - New message received
+- `debug:line` - New debug log line
 
 ## WebSocket Interface
 
@@ -301,3 +358,31 @@ The backend reads from `~/.claude/`:
 | `teams/{name}/inboxes/{agent}.json` | Agent message inbox |
 | `tasks/{name}/{id}.json` | Task definitions with status and dependencies |
 | `debug/{session-id}.txt` | Timestamped debug log output |
+
+### Team Config Data Model
+
+```json
+{
+  "name": "family-order-system",
+  "description": "家庭版点餐工具开发团队",
+  "createdAt": 1771181548614,
+  "leadAgentId": "team-lead@family-order-system",
+  "leadSessionId": "uuid-here",
+  "members": [
+    {
+      "agentId": "pm@family-order-system",
+      "name": "pm",
+      "agentType": "general-purpose",
+      "model": "claude-opus-4-6",
+      "prompt": "你是家庭版点餐工具的产品经理...",
+      "color": "blue",
+      "planModeRequired": false,
+      "joinedAt": 1771181565938,
+      "tmuxPaneId": "in-process",
+      "cwd": "/Users/lixinjun/project",
+      "subscriptions": [],
+      "backendType": "in-process"
+    }
+  ]
+}
+```

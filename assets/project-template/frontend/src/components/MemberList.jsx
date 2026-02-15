@@ -116,15 +116,25 @@ export default function MemberList({ members, leadAgentId, selectedMember, onSel
               </div>
 
               {/* Agent info */}
-              <div className="flex items-center gap-1.5 text-[9px] font-medium opacity-70">
+              <div className="flex items-center gap-1.5 text-[9px] font-medium opacity-70 flex-wrap">
                 {member.model && (
-                  <span className="px-1.5 py-0.5 rounded bg-white/60">
+                  <span className="px-1.5 py-0.5 rounded bg-white/60" title="Model">
                     {member.model}
                   </span>
                 )}
                 {member.agentType && (
-                  <span className="px-1.5 py-0.5 rounded bg-white/60">
+                  <span className="px-1.5 py-0.5 rounded bg-white/60" title="Agent Type">
                     {member.agentType}
+                  </span>
+                )}
+                {member.backendType && (
+                  <span className="px-1.5 py-0.5 rounded bg-white/60" title="Backend Type">
+                    {member.backendType}
+                  </span>
+                )}
+                {member.cwd && (
+                  <span className="px-1.5 py-0.5 rounded bg-white/60 truncate max-w-100" title="Working Directory">
+                    {member.cwd.split('/').pop() || member.cwd}
                   </span>
                 )}
               </div>
